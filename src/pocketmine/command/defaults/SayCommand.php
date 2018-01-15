@@ -57,7 +57,7 @@ class SayCommand extends VanillaCommand {
 	 *
 	 * @return bool
 	 */
-	public function execute(CommandSender $sender, string $currentAlias, array $args){
+	public function execute(CommandSender $sender, $currentAlias, array $args){
 		if(!$this->canExecute($sender)){
 			return true;
 		}

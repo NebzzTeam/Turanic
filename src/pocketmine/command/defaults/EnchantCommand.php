@@ -48,7 +48,7 @@ class EnchantCommand extends VanillaCommand {
         $this->getOverload("default")->setParameter(2, new CommandParameter("level", CommandParameter::TYPE_INT, false));
 	}
 
-	public function execute(CommandSender $sender, string $currentAlias, array $args){
+	public function execute(CommandSender $sender, $currentAlias, array $args){
 		if(!$this->canExecute($sender)){
 			return true;
 		}

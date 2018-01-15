@@ -54,7 +54,7 @@ class MakePluginCommand extends VanillaCommand {
 	 *
 	 * @return bool
 	 */
-	public function execute(CommandSender $sender, string $commandLabel, array $args){
+	public function execute(CommandSender $sender, $commandLabel, array $args){
 		if(!$this->canExecute($sender)){
 			return false;
 		}
