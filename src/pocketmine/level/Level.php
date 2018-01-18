@@ -2020,7 +2020,7 @@ class Level implements ChunkManager, Metadatable{
                 for($z = $minZ; $z <= $maxZ; ++$z){
                     foreach($this->getChunkEntities($x, $z) as $ent){
                         /** @var Entity|null $entity */
-                        if(($entity === null or ($ent !== $entity and $entity->canCollideWith($ent))) and $ent->boundingBox->intersectsWith($bb)){
+                        if($ent->canBeCollidedWith() and ($entity === null or ($ent !== $entity and $entity->canCollideWith($ent))) and $ent->boundingBox->intersectsWith($bb)){
                             $nearby[] = $ent;
                         }
                     }
@@ -2663,8 +2663,6 @@ class Level implements ChunkManager, Metadatable{
         if($entity instanceof Player){
             unset($this->players[$entity->getId()]);
             $this->checkSleep();
-        }else{
-            $entity->close();
         }
 
         unset($this->entities[$entity->getId()]);

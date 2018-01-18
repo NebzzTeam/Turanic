@@ -761,6 +761,14 @@ abstract class Entity extends Location implements Metadatable, EntityIds {
         $this->setGenericFlag(self::DATA_FLAG_IMMOBILE, $value);
     }
 
+    public function isInvisible() : bool{
+        return $this->getGenericFlag(self::DATA_FLAG_INVISIBLE);
+ 	}
+
+	public function setInvisible(bool $value = true) : void{
+        $this->setGenericFlag(self::DATA_FLAG_INVISIBLE, $value);
+    }
+
     /**
      * Returns whether the entity is able to climb blocks such as ladders or vines.
      * @return bool
@@ -1176,6 +1184,10 @@ abstract class Entity extends Location implements Metadatable, EntityIds {
         return !$this->justCreated and $entity !== $this;
     }
 
+    public function canBeCollidedWith() : bool{
+        return true;
+ 	}
+
     protected function updateMovement(){
         $diffPosition = ($this->x - $this->lastX) ** 2 + ($this->y - $this->lastY) ** 2 + ($this->z - $this->lastZ) ** 2;
         $diffRotation = ($this->yaw - $this->lastYaw) ** 2 + ($this->pitch - $this->lastPitch) ** 2;
@@ -1444,8 +1456,6 @@ abstract class Entity extends Location implements Metadatable, EntityIds {
         Timings::$timerEntityBaseTick->startTiming();
         $hasUpdate = $this->entityBaseTick($tickDiff);
         Timings::$timerEntityBaseTick->stopTiming();
-
-
 
         $this->timings->stopTiming();
 

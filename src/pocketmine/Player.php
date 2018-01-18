@@ -80,12 +80,16 @@ use pocketmine\event\TranslationContainer;
 use pocketmine\form\CustomForm;
 use pocketmine\form\element\Label;
 use pocketmine\form\Form;
+use pocketmine\inventory\AnvilInventory;
 use pocketmine\inventory\BigCraftingGrid;
 use pocketmine\inventory\CraftingGrid;
+use pocketmine\inventory\EnchantInventory;
 use pocketmine\inventory\PlayerCursorInventory;
 use pocketmine\inventory\PlayerInventory;
 use pocketmine\inventory\transaction\action\InventoryAction;
+use pocketmine\inventory\transaction\AnvilTransaction;
 use pocketmine\inventory\transaction\CraftingTransaction;
+use pocketmine\inventory\transaction\EnchantTransaction;
 use pocketmine\inventory\transaction\InventoryTransaction;
 use pocketmine\inventory\Inventory;
 use pocketmine\inventory\InventoryHolder;
@@ -555,6 +559,10 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 
     public function canCollideWith(Entity $entity) : bool{
         return false;
+    }
+
+    public function canBeCollidedWith(): bool{
+        return !$this->isSpectator();
     }
 
     public function resetFallDistance(){
@@ -2231,6 +2239,10 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
                 $this->dataPacket($packet);
                 $this->server->broadcastPacket($this->getViewers(), $packet);
                 break;
+            case EntityEventPacket::PLAYER_ADD_XP_LEVELS:
+                $toplam = $this->getXpLevel() + $packet->data;
+                $this->setXpLevel($toplam);
+                break;
             default:
                 return false;
         }
@@ -2269,26 +2281,39 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
             }
         }
 
-        if($packet->isCraftingPart){
-            if($this->craftingTransaction === null){
-                $this->craftingTransaction = new CraftingTransaction($this, $actions);
-            }else{
-                foreach($actions as $action){
-                    $this->craftingTransaction->addAction($action);
+        switch($packet->inventoryType){
+            case "Crafting":
+                if($this->craftingTransaction === null){
+                    $this->craftingTransaction = new CraftingTransaction($this, $actions);
+                }else{
+                    foreach($actions as $action){
+                        $this->craftingTransaction->addAction($action);
+                    }
                 }
-            }
 
-            if($this->craftingTransaction->getPrimaryOutput() !== null){
-                //we get the actions for this in several packets, so we can't execute it until we get the result
+                if($this->craftingTransaction->getPrimaryOutput() !== null){
+                    //we get the actions for this in several packets, so we can't execute it until we get the result
 
-                $this->craftingTransaction->execute();
-                $this->craftingTransaction = null;
-            }
+                    $this->craftingTransaction->execute();
+                    $this->craftingTransaction = null;
+                }
 
-            return true;
-        }elseif($this->craftingTransaction !== null){
-            $this->server->getLogger()->debug("Got unexpected normal inventory action with incomplete crafting transaction from " . $this->getName() . ", refusing to execute crafting");
-            $this->craftingTransaction = null;
+                return true;
+            case "Anvil":
+                $anvilTransaction = new AnvilTransaction($this, $actions);
+                $anvilTransaction->execute();
+                return true;
+            case "Enchant":
+                $enchantTransaction = new EnchantTransaction($this, $actions);
+                $enchantTransaction->execute();
+                return true;
+            default:
+                if($this->craftingTransaction !== null){
+                    $this->server->getLogger()->debug("Got unexpected normal inventory action with incomplete crafting transaction from " . $this->getName() . ", refusing to execute crafting");
+                    $this->craftingTransaction = null;
+                }
+                break;
+
         }
 
         switch($packet->transactionType){
@@ -2766,6 +2791,9 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
             case PlayerActionPacket::ACTION_CONTINUE_BREAK:
                 $block = $this->level->getBlockAt($pos->x, $pos->y, $pos->z);
                 $this->level->broadcastLevelEvent($pos, LevelEventPacket::EVENT_PARTICLE_PUNCH_BLOCK, $block->getId() | ($block->getDamage() << 8) | ($packet->face << 16));
+                break;
+            case PlayerActionPacket::ACTION_SET_ENCHANTMENT_SEED:
+                // TODO : Add Event
                 break;
             default:
                 $this->server->getLogger()->debug("Unhandled/unknown player action type " . $packet->action . " from " . $this->getName());
@@ -4433,5 +4461,29 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 
     public function handleMapInfoRequest(MapInfoRequestPacket $packet) : bool{
         return true;
+    }
+
+    /**
+     * @return EnchantInventory|null
+     */
+    public function getEnchantInventory(){
+        foreach($this->windowIndex as $inventory){
+            if($inventory instanceof EnchantInventory){
+                return $inventory;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @return AnvilInventory|null
+     */
+    public function getAnvilInventory(){
+        foreach($this->windowIndex as $inventory){
+            if($inventory instanceof AnvilInventory){
+                return $inventory;
+            }
+        }
+        return null;
     }
 }

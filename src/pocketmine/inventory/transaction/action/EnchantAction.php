@@ -22,15 +22,14 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\item;
+namespace pocketmine\inventory\transaction\action;
 
-class EnchantedBook extends Item {
+use pocketmine\Player;
 
-	public function __construct(int $meta = 0){
-		parent::__construct(self::ENCHANTED_BOOK, $meta, "Enchanted Book");
-	}
+class EnchantAction extends SlotChangeAction{
 
-	public function getMaxStackSize(): int{
-        return 1;
+    public function isValid(Player $source): bool{
+        if($this->getSlot() == -1) return true;
+        return parent::isValid($source);
     }
 }

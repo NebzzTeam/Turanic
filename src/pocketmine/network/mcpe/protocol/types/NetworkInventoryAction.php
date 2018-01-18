@@ -24,10 +24,14 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
+use pocketmine\inventory\transaction\action\AnvilMaterialAction;
+use pocketmine\inventory\transaction\action\AnvilResultAction;
+use pocketmine\inventory\transaction\action\AnvilInputAction;
 use pocketmine\inventory\transaction\action\CraftingTakeResultAction;
 use pocketmine\inventory\transaction\action\CraftingTransferMaterialAction;
 use pocketmine\inventory\transaction\action\CreativeInventoryAction;
 use pocketmine\inventory\transaction\action\DropItemAction;
+use pocketmine\inventory\transaction\action\EnchantAction;
 use pocketmine\inventory\transaction\action\SlotChangeAction;
 use pocketmine\inventory\transaction\action\InventoryAction;
 use pocketmine\item\Item;
@@ -114,7 +118,13 @@ class NetworkInventoryAction{
                 switch($this->windowId){
                     case self::SOURCE_TYPE_CRAFTING_USE_INGREDIENT:
                     case self::SOURCE_TYPE_CRAFTING_RESULT:
-                        $packet->isCraftingPart = true;
+                        $packet->inventoryType = "Crafting";
+                        break;
+                    case self::SOURCE_TYPE_ANVIL_RESULT:
+                        $packet->inventoryType = "Anvil";
+                        break;
+                    case self::SOURCE_TYPE_ENCHANT_OUTPUT:
+                        $packet->inventoryType = "Enchant";
                         break;
                 }
                 break;
@@ -203,6 +213,28 @@ class NetworkInventoryAction{
                         return new CraftingTakeResultAction($this->oldItem, $this->newItem);
                     case self::SOURCE_TYPE_CRAFTING_USE_INGREDIENT:
                         return new CraftingTransferMaterialAction($this->oldItem, $this->newItem, $this->inventorySlot);
+
+                    case self::SOURCE_TYPE_ANVIL_INPUT:
+                        $window = $player->getAnvilInventory();
+                        return new AnvilInputAction($window, $this->oldItem, $this->newItem);
+                    case self::SOURCE_TYPE_ANVIL_MATERIAL:
+                        $window = $player->getAnvilInventory();
+                        return new AnvilMaterialAction($window, $this->oldItem, $this->newItem);
+                    case self::SOURCE_TYPE_ANVIL_RESULT:
+                        $window = $player->getAnvilInventory();
+                        return new AnvilResultAction($window, $this->oldItem, $this->newItem);
+                    case self::SOURCE_TYPE_ANVIL_OUTPUT:
+                        throw new \RuntimeException("Anvil inventory source type OUTPUT");
+
+                    case self::SOURCE_TYPE_ENCHANT_INPUT:
+                        $window = $player->getEnchantInventory();
+                        return new EnchantAction($window, 0, $this->oldItem, $this->newItem);
+                    case self::SOURCE_TYPE_ENCHANT_MATERIAL:
+                        $window = $player->getEnchantInventory();
+                        return new EnchantAction($window, 1, $this->oldItem, $this->newItem);
+                    case self::SOURCE_TYPE_ENCHANT_OUTPUT:
+                        $window = $player->getEnchantInventory();
+                        return new EnchantAction($window, -1, $this->oldItem, $this->newItem);
 
                     case self::SOURCE_TYPE_CONTAINER_DROP_CONTENTS:
                         //TODO: this type applies to all fake windows, not just crafting
